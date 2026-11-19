@@ -68,6 +68,12 @@ namespace MissionPlanner.Controls.BackstageView
 
            Graphics g = pevent.Graphics;
 
+           if (KoruganStyle.Enabled)
+           {
+               PaintKorugan(g);
+               return;
+           }
+
             // Now the little 'arrow' thingy if we are selected and the selected bg grad
            if (_isSelected)
            {
@@ -121,6 +127,39 @@ namespace MissionPlanner.Controls.BackstageView
            }
         }
 
+
+        /// <summary>
+        /// Korugan tree row: flat, hairline rules, selected row in dark sand with a sand bar on the left.
+        /// </summary>
+        private void PaintKorugan(Graphics g)
+        {
+            var size = 10 * (100 / g.DpiX);
+            var font = KoruganStyle.Semi(size) ?? new Font(this.Font.FontFamily, size, FontStyle.Bold);
+
+            if (_isSelected)
+            {
+                using (var b = new SolidBrush(KoruganStyle.Sel))
+                    g.FillRectangle(b, 0, 0, Width, Height);
+                using (var bar = new SolidBrush(KoruganStyle.Sand))
+                    g.FillRectangle(bar, 0, 0, 2, Height);
+                using (var b = new SolidBrush(KoruganStyle.SandLight))
+                    g.DrawString(Text, font, b, 7, 6);
+            }
+            else
+            {
+                if (_isMouseOver)
+                {
+                    using (var b = new SolidBrush(KoruganStyle.Hover))
+                        g.FillRectangle(b, 0, 0, Width, Height);
+                }
+
+                using (var b = new SolidBrush(_isMouseOver ? KoruganStyle.Ink : UnSelectedTextColor))
+                    g.DrawString(Text, font, b, 7, 6);
+            }
+
+            using (var p = new Pen(KoruganStyle.Line))
+                g.DrawLine(p, 0, Height - 1, Width, Height - 1);
+        }
 
         protected override void OnMouseEnter(EventArgs e)
         {

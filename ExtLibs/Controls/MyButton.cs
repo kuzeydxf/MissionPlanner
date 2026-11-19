@@ -150,7 +150,17 @@ namespace MissionPlanner.Controls
                 if (amppos != -1)
                     display = display.Remove(amppos, 1);
 
-                gr.DrawString(display, this.Font, mybrush, outside, stringFormat);
+                Font drawfont = this.Font;
+                if (KoruganStyle.Enabled)
+                {
+                    // Korugan: SemiBold, uppercase when it still fits the button
+                    drawfont = KoruganStyle.Semi(this.Font) ?? this.Font;
+                    var upper = display.ToUpperInvariant();
+                    if (gr.MeasureString(upper, drawfont).Width <= this.Width - 4)
+                        display = upper;
+                }
+
+                gr.DrawString(display, drawfont, mybrush, outside, stringFormat);
             }
             catch { }
 

@@ -48,6 +48,7 @@ namespace MissionPlanner.Utilities
         {
             BurnKermitIconSet,
             HighContrastIconSet,
+            KoruganIconSet,
         }
 
         public String strThemeName { get; set; }
@@ -115,10 +116,20 @@ namespace MissionPlanner.Utilities
                 }
             }
 
+            // Korugan look (shared with the custom-drawn controls)
+            KoruganStyle.Enabled = iconSet == IconSet.KoruganIconSet;
+#if !LIB
+            if (KoruganStyle.Enabled)
+                KoruganFonts.Load();
+#endif
+
             if (MainV2.instance != null)
             {
                 switch (iconSet)
                 {
+                    case IconSet.KoruganIconSet:
+                        MainV2.instance.switchicons(new MainV2.koruganmenuicons());
+                        break;
                     case IconSet.BurnKermitIconSet:
                         MainV2.instance.switchicons(new MainV2.burntkermitmenuicons());
                         break;
@@ -1057,16 +1068,55 @@ mc:Ignorable=""d""
             }
         }
 
+        private static readonly string[] KoruganReplaceFonts =
+        {
+            "Microsoft Sans Serif", "Segoe UI", "Segoe UI Semibold", "Tahoma", "Arial", "Verdana", "Calibri",
+            "Sans Serif"
+        };
+
+        /// <summary>
+        /// Korugan theme: swap the stock sans-serif UI fonts for Barlow (same size and style).
+        /// Monospace and special-purpose fonts are left alone.
+        /// </summary>
+        private static void ApplyKoruganFont(Control ctl)
+        {
+            if (!KoruganStyle.Enabled || KoruganStyle.UiFamily == null || ctl == null)
+                return;
+            if (ctl is MissionPlanner.Controls.HUD || ctl.GetType().Name.StartsWith("GMap"))
+                return;
+
+            try
+            {
+                var f = ctl.Font;
+                if (f == null)
+                    return;
+                var name = f.FontFamily.Name;
+                if (Array.IndexOf(KoruganReplaceFonts, name) < 0 &&
+                    !name.Equals(FontFamily.GenericSansSerif.Name, StringComparison.OrdinalIgnoreCase))
+                    return;
+                var nf = KoruganStyle.Ui(f);
+                if (nf != null && !ReferenceEquals(nf, f))
+                    ctl.Font = nf;
+            }
+            catch (Exception ex)
+            {
+                log.Debug(ex);
+            }
+        }
+
         private static void ApplyTheme(Control temp, int level)
         {
             if (level == 0)
             {
                 temp.BackColor = BGColor;
                 temp.ForeColor = TextColor;
+                ApplyKoruganFont(temp);
             }
 
             foreach (Control ctl in temp.Controls)
             {
+                ApplyKoruganFont(ctl);
+
                 if (ctl.GetType() == typeof(Label))
                 {
                     if (!(ctl.Tag is string && (string)ctl.Tag == "custom"))
@@ -1103,6 +1153,19 @@ mc:Ignorable=""d""
                     else if (but.Name == "quickView1")
                     {
                         but.numberColor = Color.FromArgb((209 + mix.R) / 2, (151 + mix.G) / 2, (248 + mix.B) / 2);
+                    }
+                    if (KoruganStyle.Enabled)
+                    {
+                        // Korugan palette: sand, white, viewport amber, sketch blue
+                        switch (but.Name)
+                        {
+                            case "quickView1": but.numberColor = KoruganStyle.Sand; break;
+                            case "quickView2": but.numberColor = Color.FromArgb(0xFF, 0xAD, 0x14); break;
+                            case "quickView3": but.numberColor = KoruganStyle.Ink; break;
+                            case "quickView4": but.numberColor = Color.FromArgb(0x8E, 0xC8, 0xFF); break;
+                            case "quickView5": but.numberColor = KoruganStyle.SandLight; break;
+                            case "quickView6": but.numberColor = Color.FromArgb(0x8F, 0xBF, 0x7A); break;
+                        }
                     }
                     but.numberColorBackup = but.numberColor;
                     //return;  //return removed to process all quickView controls
@@ -1296,6 +1359,22 @@ mc:Ignorable=""d""
 
                     dgv.ColumnHeadersDefaultCellStyle = hs;
                     dgv.RowHeadersDefaultCellStyle = hs;
+
+                    if (KoruganStyle.Enabled)
+                    {
+                        // selected rows in dark sand, hairline grid
+                        rs.SelectionBackColor = KoruganStyle.Sel;
+                        rs.SelectionForeColor = KoruganStyle.SandLight;
+                        hs.SelectionBackColor = KoruganStyle.Sel;
+                        hs.SelectionForeColor = KoruganStyle.SandLight;
+                        hs.ForeColor = KoruganStyle.Sand;
+                        dgv.AlternatingRowsDefaultCellStyle.SelectionBackColor = KoruganStyle.Sel;
+                        dgv.AlternatingRowsDefaultCellStyle.SelectionForeColor = KoruganStyle.SandLight;
+                        dgv.RowsDefaultCellStyle = rs;
+                        dgv.ColumnHeadersDefaultCellStyle = hs;
+                        dgv.RowHeadersDefaultCellStyle = hs;
+                        dgv.GridColor = KoruganStyle.Line;
+                    }
                 }
                 else if (ctl.GetType() == typeof(CheckBox) || ctl.GetType() == typeof(MavlinkCheckBox))
                 {
@@ -1343,7 +1422,7 @@ mc:Ignorable=""d""
                     bsv.HighlightColor1 = BannerColor1;
                     bsv.SelectedTextColor = TextColor;
                     bsv.UnSelectedTextColor = UnselectedTextColour;
-                    bsv.ButtonsAreaPencilColor = Color.DarkGray;
+                    bsv.ButtonsAreaPencilColor = KoruganStyle.Enabled ? KoruganStyle.Line : Color.DarkGray;
                 }
                 else if (ctl.GetType() == typeof(HorizontalProgressBar2) ||
                          ctl.GetType() == typeof(VerticalProgressBar2))

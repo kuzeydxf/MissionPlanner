@@ -5,6 +5,8 @@ jobs:
   build:
     name: Build Release
     runs-on: windows-latest
+    permissions:
+      contents: write
 
     steps:
       - uses: actions/checkout@v2
@@ -68,6 +70,22 @@ jobs:
         with:
           name: MissionPlannerBeta
           path: bin\Release\net461
+
+      # Korugan UI build: publish the zip as a release on every push to the korugan branch
+      - name: Korugan release zip
+        if: ${{ github.ref == 'refs/heads/korugan' }}
+        shell: pwsh
+        run: copy MissionPlannerBeta.zip MissionPlanner-Korugan.zip
+
+      - uses: "marvinpinto/action-automatic-releases@v1.2.1"
+        if: ${{ github.ref == 'refs/heads/korugan' }}
+        with:
+          repo_token: "${{ secrets.GITHUB_TOKEN }}"
+          automatic_release_tag: "korugan-latest"
+          prerelease: false
+          title: "Mission Planner - Korugan UI"
+          files: |
+            MissionPlanner-Korugan.zip
           
       - uses: "marvinpinto/action-automatic-releases@v1.2.1"
         if: ${{ github.ref == 'refs/tags/beta' }}
@@ -86,6 +104,7 @@ jobs:
   buildDebug:
     name: Build Debug
     runs-on: windows-latest
+    if: ${{ github.ref != 'refs/heads/korugan' }}
 
     steps:
       - uses: actions/checkout@v2

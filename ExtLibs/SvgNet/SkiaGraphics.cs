@@ -43,6 +43,11 @@ namespace System
         static Dictionary<string, SKTypeface> fontcache = new Dictionary<string, SKTypeface>();
 
         /// <summary>
+        /// Font family name -> font file, for fonts the app ships and loads privately.
+        /// </summary>
+        public static Dictionary<string, string> PrivateFontFiles = new Dictionary<string, string>();
+
+        /// <summary>
         /// from MP.Drawing.Extension.cs
         /// </summary>
         /// <param name="font"></param>
@@ -75,7 +80,17 @@ namespace System
                 }
                 else
                 {
-                    if (!fontcache.ContainsKey(id))
+                    // fonts the app loaded from its own folder (Korugan theme): Skia can't see
+                    // process-private GDI fonts, so load them from the file instead
+                    string file;
+                    var famname = font?.FontFamily?.Name;
+                    if (famname != null && PrivateFontFiles.TryGetValue(famname, out file))
+                    {
+                        id = "file:" + file;
+                        if (!fontcache.ContainsKey(id))
+                            fontcache[id] = SKTypeface.FromFile(file) ?? SKTypeface.FromFamilyName("");
+                    }
+                    else if (!fontcache.ContainsKey(id))
                         fontcache[id] = SKTypeface.FromFamilyName(id);
                 }
 

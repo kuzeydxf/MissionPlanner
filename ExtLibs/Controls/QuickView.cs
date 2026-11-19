@@ -76,11 +76,16 @@ namespace MissionPlanner.Controls
             e2.Surface.Canvas.Clear();
             int y = 0;
             {
-                Size extent = e.MeasureString(desc, this.Font).ToSize();
+                // Korugan: tracked-uppercase sand label
+                var descfont = KoruganStyle.Enabled ? (KoruganStyle.Semi(this.Font) ?? this.Font) : this.Font;
+                var desctext = KoruganStyle.Enabled ? (desc ?? "").ToUpperInvariant() : desc;
+                var desccolor = KoruganStyle.Enabled ? KoruganStyle.Sand : this.ForeColor;
+
+                Size extent = e.MeasureString(desctext, descfont).ToSize();
 
                 var mid = extent.Width / 2;
 
-                e.DrawString(desc, this.Font, new SolidBrush(this.ForeColor), this.Width / 2 - mid, 5);
+                e.DrawString(desctext, descfont, new SolidBrush(desccolor), this.Width / 2 - mid, 5);
 
                 y = extent.Height;
             }
@@ -88,7 +93,11 @@ namespace MissionPlanner.Controls
             {
                 var numb = number.ToString(numberformat);
 
-                Size extent = e.MeasureString("0".PadLeft(numb.Length+1,'0'), new Font(this.Font.FontFamily, (float)newSize, this.Font.Style)).ToSize();
+                // Korugan: numbers in IBM Plex Mono
+                var numfamily = (KoruganStyle.Enabled && KoruganStyle.NumFamily != null) ? KoruganStyle.NumFamily : this.Font.FontFamily;
+                var numstyle = (KoruganStyle.Enabled && KoruganStyle.NumFamily != null) ? FontStyle.Regular : this.Font.Style;
+
+                Size extent = e.MeasureString("0".PadLeft(numb.Length+1,'0'), new Font(numfamily, (float)newSize, numstyle)).ToSize();
 
                 float hRatio = (this.Height - y) / (float)(extent.Height);
                 float wRatio = this.Width / (float)extent.Width;
@@ -101,9 +110,9 @@ namespace MissionPlanner.Controls
                 if (newSize < 8 || newSize > 999999)
                     newSize = 8;
 
-                extent = e.MeasureString(numb, new Font(this.Font.FontFamily, (float)newSize, this.Font.Style)).ToSize();
+                extent = e.MeasureString(numb, new Font(numfamily, (float)newSize, numstyle)).ToSize();
 
-                e.DrawString(numb, new Font(this.Font.FontFamily, (float)newSize, this.Font.Style), new SolidBrush(this.numberColor), this.Width / 2 - extent.Width / 2, y + ((this.Height - y) / 2 - extent.Height / 2));
+                e.DrawString(numb, new Font(numfamily, (float)newSize, numstyle), new SolidBrush(this.numberColor), this.Width / 2 - extent.Width / 2, y + ((this.Height - y) / 2 - extent.Height / 2));
             }
         }
 

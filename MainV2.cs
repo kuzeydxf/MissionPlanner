@@ -209,6 +209,152 @@ namespace MissionPlanner
             }
         }
 
+        /// <summary>
+        /// Korugan menu icons (black, white, FED-STD sand), loaded from Korugan\ next to the exe.
+        /// Anything missing falls back to the high-contrast set.
+        /// </summary>
+        public class koruganmenuicons : highcontrastmenuicons
+        {
+            private static readonly Dictionary<string, Image> cache = new Dictionary<string, Image>();
+
+            private static Image load(string name, Image fallback)
+            {
+                lock (cache)
+                {
+                    Image img;
+                    if (cache.TryGetValue(name, out img))
+                        return img;
+                    try
+                    {
+                        var file = Path.Combine(Settings.GetRunningDirectory(), "Korugan", name);
+                        if (File.Exists(file))
+                        {
+                            // load a copy so the file is not locked
+                            using (var src = Image.FromFile(file))
+                                img = new Bitmap(src);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        log.Error(ex);
+                    }
+
+                    if (img == null)
+                        return fallback;
+                    cache[name] = img;
+                    return img;
+                }
+            }
+
+            public override Image fd => load("korugan_flightdata_icon.png", base.fd);
+            public override Image fp => load("korugan_flightplan_icon.png", base.fp);
+            public override Image initsetup => load("korugan_initialsetup_icon.png", base.initsetup);
+            public override Image config_tuning => load("korugan_tuningconfig_icon.png", base.config_tuning);
+            public override Image sim => load("korugan_simulation_icon.png", base.sim);
+            public override Image help => load("korugan_help_icon.png", base.help);
+            public override Image connect => load("korugan_connect_icon.png", base.connect);
+            public override Image disconnect => load("korugan_disconnect_icon.png", base.disconnect);
+            public override Image bg => load("korugan_icon_background.png", base.bg);
+        }
+
+        /// <summary>
+        /// Korugan command bar: black, hairline bottom rule, muted uppercase labels,
+        /// the open screen marked with a sand underline (Korugan CAD's tab style).
+        /// </summary>
+        public class KoruganMenuRenderer : ToolStripProfessionalRenderer
+        {
+            private static bool IsCurrent(ToolStripItem item)
+            {
+                return item.Owner is MenuStrip && item.Name != "MenuConnect" &&
+                       item.BackColor.ToArgb() == ThemeManager.ControlBGColor.ToArgb();
+            }
+
+            protected override void OnRenderToolStripBackground(ToolStripRenderEventArgs e)
+            {
+                using (var b = new SolidBrush(e.ToolStrip is ToolStripDropDown ? KoruganStyle.Panel : KoruganStyle.Chrome))
+                    e.Graphics.FillRectangle(b, e.AffectedBounds);
+            }
+
+            protected override void OnRenderToolStripBorder(ToolStripRenderEventArgs e)
+            {
+                using (var p = new Pen(KoruganStyle.Line))
+                {
+                    var r = e.AffectedBounds;
+                    if (e.ToolStrip is ToolStripDropDown)
+                        e.Graphics.DrawRectangle(p, r.X, r.Y, r.Width - 1, r.Height - 1);
+                    else
+                        e.Graphics.DrawLine(p, r.Left, r.Bottom - 1, r.Right, r.Bottom - 1);
+                }
+            }
+
+            protected override void OnRenderImageMargin(ToolStripRenderEventArgs e)
+            {
+                using (var b = new SolidBrush(KoruganStyle.Panel))
+                    e.Graphics.FillRectangle(b, e.AffectedBounds);
+            }
+
+            protected override void OnRenderMenuItemBackground(ToolStripItemRenderEventArgs e)
+            {
+                var r = new Rectangle(Point.Empty, e.Item.Size);
+                var g = e.Graphics;
+
+                if (e.Item.IsOnDropDown)
+                {
+                    if (e.Item.Selected && e.Item.Enabled)
+                        using (var b = new SolidBrush(KoruganStyle.Sel))
+                            g.FillRectangle(b, r);
+                    return;
+                }
+
+                if (e.Item.Selected || e.Item.Pressed)
+                    using (var b = new SolidBrush(KoruganStyle.Hover))
+                        g.FillRectangle(b, r);
+
+                if (IsCurrent(e.Item))
+                    using (var b = new SolidBrush(KoruganStyle.Sand))
+                        g.FillRectangle(b, 0, r.Height - 2, r.Width, 2);
+            }
+
+            protected override void OnRenderItemText(ToolStripItemTextRenderEventArgs e)
+            {
+                if (e.Item.IsOnDropDown)
+                {
+                    e.TextColor = e.Item.Enabled ? KoruganStyle.Ink : KoruganStyle.Muted;
+                }
+                else
+                {
+                    e.TextColor = (IsCurrent(e.Item) || e.Item.Selected || e.Item.Pressed)
+                        ? Color.White
+                        : KoruganStyle.Muted;
+                    var semi = KoruganStyle.Semi(e.TextFont);
+                    if (semi != null)
+                        e.TextFont = semi;
+                }
+
+                base.OnRenderItemText(e);
+            }
+
+            protected override void OnRenderSeparator(ToolStripSeparatorRenderEventArgs e)
+            {
+                using (var p = new Pen(KoruganStyle.Line))
+                {
+                    var r = e.Item.ContentRectangle;
+                    if (e.Vertical)
+                        e.Graphics.DrawLine(p, r.Width / 2, r.Top, r.Width / 2, r.Bottom);
+                    else
+                        e.Graphics.DrawLine(p, r.Left, r.Height / 2, r.Right, r.Height / 2);
+                }
+            }
+
+            protected override void OnRenderArrow(ToolStripArrowRenderEventArgs e)
+            {
+                e.ArrowColor = KoruganStyle.Sand;
+                base.OnRenderArrow(e);
+            }
+        }
+
+        private ToolStripRenderer defaultMenuRenderer;
+
         public class highcontrastmenuicons : menuicons
         {
             private string running_directory = Settings.GetRunningDirectory();
@@ -714,8 +860,19 @@ namespace MissionPlanner
             {
                 if (File.Exists($"{running_directory}custom.mpsystheme"))
                     Settings.Instance["theme"] = "custom.mpsystheme";
+                else if (File.Exists($"{running_directory}Korugan.mpsystheme"))
+                    Settings.Instance["theme"] = "Korugan.mpsystheme";
                 else
                     Settings.Instance["theme"] = "BurntKermit.mpsystheme";
+            }
+
+            // Korugan build: switch to the Korugan theme once; after that the user's choice in
+            // Config > Planner > Theme is kept
+            if (Settings.Instance["korugan_theme_default"] == null)
+            {
+                if (File.Exists($"{running_directory}Korugan.mpsystheme"))
+                    Settings.Instance["theme"] = "Korugan.mpsystheme";
+                Settings.Instance["korugan_theme_default"] = "1";
             }
 
             ThemeManager.LoadTheme(Settings.Instance["theme"]);
@@ -1196,6 +1353,21 @@ namespace MissionPlanner
             MenuConfigTune.ForeColor = ThemeManager.TextColor;
             MenuConnect.ForeColor = ThemeManager.TextColor;
             MenuHelp.ForeColor = ThemeManager.TextColor;
+
+            // Korugan command bar
+            if (icons is koruganmenuicons)
+            {
+                if (defaultMenuRenderer == null)
+                    defaultMenuRenderer = MainMenu.Renderer;
+                MainMenu.Renderer = new KoruganMenuRenderer();
+                MainMenu.BackColor = KoruganStyle.Chrome;
+            }
+            else if (defaultMenuRenderer != null)
+            {
+                MainMenu.Renderer = defaultMenuRenderer;
+            }
+
+            MainMenu.Invalidate();
         }
 
         void adsb_UpdatePlanePosition(object sender, MissionPlanner.Utilities.adsb.PointLatLngAltHdg adsb)
