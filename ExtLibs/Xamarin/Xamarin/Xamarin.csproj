@@ -57,6 +57,7 @@
     <None Include="..\..\..\Utilities\ExtensionsMP.cs" Link="GCSViews\ExtensionsMP.cs" />
     <Compile Include="..\..\Controls\IDynamicParameterControl.cs" Link="GCSViews\IDynamicParameterControl.cs" />
     <Compile Include="..\..\Controls\MyButton.cs" Link="GCSViews\MyButton.cs" />
+    <Compile Include="..\..\Controls\KoruganStyle.cs" Link="GCSViews\KoruganStyle.cs" />
     <Compile Include="..\..\Controls\MyUserControl.cs" Link="GCSViews\MyUserControl.cs" />
   </ItemGroup>
 

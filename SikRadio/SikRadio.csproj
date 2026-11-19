@@ -68,6 +68,9 @@
       <Link>Linked\MyButton.cs</Link>
       <SubType>Component</SubType>
     </Compile>
+    <Compile Include="..\ExtLibs\Controls\KoruganStyle.cs">
+      <Link>Linked\KoruganStyle.cs</Link>
+    </Compile>
     <Compile Include="..\ExtLibs\Interfaces\ICommsSerial.cs">
       <Link>Linked\ICommsSerial.cs</Link>
     </Compile>
